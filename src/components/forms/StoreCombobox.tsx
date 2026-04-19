@@ -65,7 +65,8 @@ export function StoreCombobox({ groupId, value, onChange, error }: Props) {
   const selected = stores.find(s => s.id === value) ?? null
 
   const { register, handleSubmit, setValue, formState: { errors }, reset } = useForm<NewStoreValues>({
-    resolver: zodResolver(newStoreSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(newStoreSchema) as any,
     defaultValues: { type: 'supermercado' },
   })
 
@@ -153,7 +154,7 @@ export function StoreCombobox({ groupId, value, onChange, error }: Props) {
                 </SelectTrigger>
                 <SelectContent>
                   {STORE_TYPES.map(t => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    <SelectItem key={t.value} value={t.value ?? 'otro'}>{t.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

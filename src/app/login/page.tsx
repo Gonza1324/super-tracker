@@ -19,7 +19,6 @@ const signupSchema = loginSchema.extend({
   displayName: z.string().min(2, 'Mínimo 2 caracteres').max(50),
 })
 
-type LoginValues = z.infer<typeof loginSchema>
 type SignupValues = z.infer<typeof signupSchema>
 
 export function LoginPage() {
@@ -32,7 +31,8 @@ export function LoginPage() {
     formState: { errors, isSubmitting },
     reset,
   } = useForm<SignupValues>({
-    resolver: zodResolver(mode === 'login' ? loginSchema : signupSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(signupSchema) as any,
   })
 
   async function onSubmit(values: SignupValues) {

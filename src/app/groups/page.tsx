@@ -58,8 +58,10 @@ export function GroupsPage() {
     onError: (err: Error) => toast.error(err.message),
   })
 
-  const createForm = useForm<CreateValues>({ resolver: zodResolver(createSchema) })
-  const joinForm = useForm<JoinValues>({ resolver: zodResolver(joinSchema) })
+  const createForm = useForm<CreateValues>({ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(createSchema) as any })
+  const joinForm = useForm<JoinValues>({ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(joinSchema) as any })
 
   function selectGroup(id: string, name: string) {
     setCurrentGroup(id, name)

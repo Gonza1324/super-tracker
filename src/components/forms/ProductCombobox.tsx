@@ -80,7 +80,8 @@ export function ProductCombobox({ groupId, value, onChange, error }: Props) {
   )
 
   const { register, handleSubmit, control, formState: { errors }, reset } = useForm<NewProductValues>({
-    resolver: zodResolver(newProductSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(newProductSchema) as any,
     defaultValues: { defaultUnit: 'un' },
   })
 

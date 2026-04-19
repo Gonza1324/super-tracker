@@ -62,9 +62,9 @@ function ItemRow({
 }: {
   index: number
   groupId: string
-  control: ReturnType<typeof useForm<PurchaseFormValues>>['control']
-  register: ReturnType<typeof useForm<PurchaseFormValues>>['register']
-  setValue: ReturnType<typeof useForm<PurchaseFormValues>>['setValue']
+  control: import('react-hook-form').Control<PurchaseFormValues>
+  register: import('react-hook-form').UseFormRegister<PurchaseFormValues>
+  setValue: import('react-hook-form').UseFormSetValue<PurchaseFormValues>
   remove: () => void
 }) {
   const quantity = useWatch({ control, name: `items.${index}.quantity` })
@@ -192,7 +192,8 @@ export function NewPurchasePage() {
     watch,
     formState: { errors },
   } = useForm<PurchaseFormValues>({
-    resolver: zodResolver(purchaseSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(purchaseSchema) as any,
     defaultValues: {
       store: null,
       store_id: null,
