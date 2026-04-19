@@ -32,7 +32,7 @@ export function LoginPage() {
     reset,
   } = useForm<SignupValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(signupSchema) as any,
+    resolver: zodResolver(mode === 'login' ? loginSchema : signupSchema) as any,
   })
 
   async function onSubmit(values: SignupValues) {

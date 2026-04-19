@@ -31,7 +31,8 @@ const thisMonth = format(new Date(), 'yyyy-MM')
 const lastMonth = format(subMonths(new Date(), 1), 'yyyy-MM')
 
 function monthLabel(m: string) {
-  return format(new Date(m + '-01T00:00:00'), 'MMM', { locale: es })
+  const label = format(new Date(m + '-01T00:00:00'), 'MMM', { locale: es })
+  return label.charAt(0).toUpperCase() + label.slice(1)
 }
 
 // ── Tab: Resumen mensual ──────────────────────────────────────────────────────

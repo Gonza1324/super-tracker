@@ -33,7 +33,7 @@ Copiá el ejemplo y completá con tus credenciales de Supabase:
 cp .env.example .env.local
 ```
 
-`.env.local`:
+`.env.local`
 ```
 VITE_SUPABASE_URL=https://xxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
