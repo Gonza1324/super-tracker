@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { AppLayout } from '@/app/layout'
-import { ProtectedRoute, AuthRoute } from '@/features/auth/ProtectedRoute'
+import { ProtectedRoute, AuthRoute, GroupsRoute } from '@/features/auth/ProtectedRoute'
 import { LoginPage } from '@/app/login/page'
 import { GroupsPage } from '@/app/groups/page'
 import { DashboardPage } from '@/app/dashboard/page'
@@ -19,8 +19,10 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path: '/groups',
-    element: <GroupsPage />,
+    element: <GroupsRoute />,
+    children: [
+      { path: '/groups', element: <GroupsPage /> },
+    ],
   },
   {
     element: <ProtectedRoute />,

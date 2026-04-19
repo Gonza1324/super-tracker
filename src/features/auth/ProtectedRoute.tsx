@@ -18,7 +18,16 @@ export function AuthRoute() {
   const { user, loading } = useAuth()
 
   if (loading) return null
-  if (user) return <Navigate to="/" replace />
+  if (user) return <Navigate to="/groups" replace />
+
+  return <Outlet />
+}
+
+export function GroupsRoute() {
+  const { user, loading } = useAuth()
+
+  if (loading) return null
+  if (!user) return <Navigate to="/login" replace />
 
   return <Outlet />
 }
