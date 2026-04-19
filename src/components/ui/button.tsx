@@ -1,4 +1,4 @@
-import { Button as ButtonPrimitive } from "@/components/ui/button"
+import { Button as ButtonPrimitive } from "src/components/ui/button"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
