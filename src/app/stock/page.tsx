@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Package, Minus, Plus, ListChecks, Search } from 'lucide-react'
+import { Package, Minus, Plus, ListChecks, Search, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Fab } from '@/components/ui/fab'
 import { Input } from '@/components/ui/input'
@@ -9,11 +9,13 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ManualAdjustDialog } from '@/components/forms/ManualAdjustDialog'
-import { NewProductDialog } from '@/components/forms/NewProductDialog'
+import { AddStockDialog } from '@/components/forms/AddStockDialog'
 import { ShoppingListDialog } from '@/features/stock/ShoppingListDialog'
 import {
   fetchStockItems,
   adjustStock,
+  deleteStockItem,
+  restoreStockItem,
   type StockItemWithProduct,
 } from '@/features/stock/stockService'
 import { fetchCategories } from '@/features/products/productsService'
@@ -38,20 +40,85 @@ function StockSkeleton() {
   )
 }
 
+const SWIPE_THRESHOLD = 90
+
 function StockItemCard({
   item,
   onQuickAdjust,
   onManualAdjust,
+  onDelete,
 }: {
   item: StockItemWithProduct
   onQuickAdjust: (delta: number) => void
   onManualAdjust: () => void
+  onDelete: () => void
 }) {
   const low = isLow(item)
   const out = isOut(item)
 
+  const [offset, setOffset] = useState(0)
+  const [dragging, setDragging] = useState(false)
+  const startX = useRef(0)
+  const startY = useRef(0)
+  const locked = useRef<'h' | 'v' | null>(null)
+
+  function onTouchStart(e: React.TouchEvent) {
+    const t = e.touches[0]
+    startX.current = t.clientX
+    startY.current = t.clientY
+    locked.current = null
+    setDragging(true)
+  }
+
+  function onTouchMove(e: React.TouchEvent) {
+    if (!dragging) return
+    const t = e.touches[0]
+    const dx = t.clientX - startX.current
+    const dy = t.clientY - startY.current
+    if (locked.current === null) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return
+      locked.current = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v'
+    }
+    if (locked.current === 'h') {
+      e.preventDefault()
+      setOffset(dx)
+    }
+  }
+
+  function onTouchEnd() {
+    setDragging(false)
+    if (locked.current === 'h' && Math.abs(offset) >= SWIPE_THRESHOLD) {
+      setOffset(offset > 0 ? 400 : -400)
+      window.setTimeout(onDelete, 180)
+    } else {
+      setOffset(0)
+    }
+  }
+
+  const showDeleteHint = Math.abs(offset) > 20
+
   return (
-    <div className={`flex items-center gap-3 rounded-xl border bg-card px-3 py-3 transition-colors ${out ? 'border-destructive/30 bg-destructive/5' : low ? 'border-yellow-500/30 bg-yellow-50/50 dark:bg-yellow-950/20' : ''}`}>
+    <div className="relative overflow-hidden rounded-xl">
+      {showDeleteHint && (
+        <div className={`absolute inset-0 flex items-center px-4 bg-destructive/15 text-destructive ${offset > 0 ? 'justify-start' : 'justify-end'}`}>
+          <div className="flex items-center gap-1.5 text-sm font-medium">
+            <Trash2 size={16} />
+            Eliminar
+          </div>
+        </div>
+      )}
+      <div
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchEnd}
+        style={{
+          transform: `translateX(${offset}px)`,
+          transition: dragging ? 'none' : 'transform 180ms ease-out',
+          touchAction: 'pan-y',
+        }}
+        className={`flex items-center gap-3 rounded-xl border bg-card px-3 py-3 ${out ? 'border-destructive/30 bg-destructive/5' : low ? 'border-yellow-500/30 bg-yellow-50/50 dark:bg-yellow-950/20' : ''}`}
+      >
       {/* Icon */}
       <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-lg ${out ? 'bg-destructive/10' : low ? 'bg-yellow-100 dark:bg-yellow-900/30' : 'bg-primary/10'}`}>
         {item.products?.categories?.icon ?? '📦'}
@@ -98,6 +165,7 @@ function StockItemCard({
           <Plus size={14} />
         </button>
       </div>
+      </div>
     </div>
   )
 }
@@ -111,7 +179,7 @@ export function StockPage() {
   const [stockFilter, setStockFilter] = useState<StockFilter>('all')
   const [adjustItem, setAdjustItem] = useState<StockItemWithProduct | null>(null)
   const [listOpen, setListOpen] = useState(false)
-  const [newProductOpen, setNewProductOpen] = useState(false)
+  const [addStockOpen, setAddStockOpen] = useState(false)
 
   const { data: stockItems = [], isLoading } = useQuery({
     queryKey: ['stock', currentGroupId],
@@ -138,6 +206,40 @@ export function StockPage() {
   function handleQuickAdjust(item: StockItemWithProduct, delta: number) {
     const type = delta > 0 ? 'manual_add' : 'manual_remove'
     adjustMutation.mutate({ item, delta, type })
+  }
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteStockItem(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['stock', currentGroupId] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const restoreMutation = useMutation({
+    mutationFn: restoreStockItem,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['stock', currentGroupId] }),
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  function handleDelete(item: StockItemWithProduct) {
+    const snapshot = {
+      group_id: item.group_id,
+      product_id: item.product_id,
+      quantity: item.quantity,
+      unit: item.unit,
+      min_quantity: item.min_quantity,
+    }
+    deleteMutation.mutate(item.id, {
+      onSuccess: () => {
+        toast.success(`${item.products?.name ?? 'Producto'} eliminado del stock`, {
+          action: {
+            label: 'Deshacer',
+            onClick: () => restoreMutation.mutate(snapshot),
+          },
+        })
+      },
+    })
   }
 
   const filtered = useMemo(() => {
@@ -266,6 +368,7 @@ export function StockPage() {
               item={item}
               onQuickAdjust={delta => handleQuickAdjust(item, delta)}
               onManualAdjust={() => setAdjustItem(item)}
+              onDelete={() => handleDelete(item)}
             />
           ))}
         </div>
@@ -285,15 +388,15 @@ export function StockPage() {
       )}
 
       <Fab
-        onClick={() => setNewProductOpen(true)}
+        onClick={() => setAddStockOpen(true)}
         icon={<Plus size={18} />}
-        label="Nuevo producto"
+        label="Agregar a stock"
       />
 
-      <NewProductDialog
+      <AddStockDialog
         groupId={currentGroupId}
-        open={newProductOpen}
-        onOpenChange={setNewProductOpen}
+        open={addStockOpen}
+        onOpenChange={setAddStockOpen}
       />
 
       <ShoppingListDialog
