@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { Loader2, ScanLine } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -63,6 +63,9 @@ export function NewProductDialog({ groupId, open, onOpenChange, onCreated }: Pro
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>Nuevo producto</DialogTitle>
+          <DialogDescription className="sr-only">
+            Crear un producto en el catálogo del grupo
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(v => mutation.mutate(v))} className="space-y-4 pt-2">
           <div className="space-y-2">

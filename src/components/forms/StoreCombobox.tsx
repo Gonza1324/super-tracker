@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -139,6 +140,9 @@ export function StoreCombobox({ groupId, value, onChange, error }: Props) {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Nuevo comercio</DialogTitle>
+            <DialogDescription className="sr-only">
+              Crear un nuevo comercio para asociar a compras
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit(v => createMutation.mutate(v))} className="space-y-4 pt-2">
             <div className="space-y-2">

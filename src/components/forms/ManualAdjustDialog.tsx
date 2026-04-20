@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -47,6 +48,9 @@ export function ManualAdjustDialog({ item, open, onOpenChange, onSubmit, isPendi
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>Ajuste manual</DialogTitle>
+          <DialogDescription className="sr-only">
+            Sumar o restar cantidad al stock de este producto
+          </DialogDescription>
         </DialogHeader>
         <div className="text-sm text-muted-foreground">
           <span className="font-medium text-foreground">{item.products?.name ?? 'Producto'}</span>
