@@ -10,9 +10,9 @@ export type Database = {
   public: {
     Tables: {
       profiles: {
-        Row: { id: string; display_name: string | null; created_at: string }
-        Insert: { id: string; display_name?: string | null; created_at?: string }
-        Update: { id?: string; display_name?: string | null; created_at?: string }
+        Row: { id: string; display_name: string | null; is_admin: boolean; created_at: string }
+        Insert: { id: string; display_name?: string | null; is_admin?: boolean; created_at?: string }
+        Update: { id?: string; display_name?: string | null; is_admin?: boolean; created_at?: string }
         Relationships: []
       }
       groups: {

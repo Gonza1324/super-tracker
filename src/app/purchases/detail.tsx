@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { ChevronLeft, Trash2, Store, CalendarDays, FileText } from 'lucide-react'
+import { ChevronLeft, Pencil, Trash2, Store, CalendarDays, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
@@ -97,12 +97,22 @@ export function PurchaseDetailPage() {
           <h1 className="text-lg font-semibold">Detalle de compra</h1>
         </div>
 
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-              <Trash2 size={18} />
-            </Button>
-          </AlertDialogTrigger>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(`/purchases/${id}/edit`)}
+            aria-label="Editar compra"
+          >
+            <Pencil size={18} />
+          </Button>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" aria-label="Eliminar compra">
+                <Trash2 size={18} />
+              </Button>
+            </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>¿Eliminar esta compra?</AlertDialogTitle>
@@ -121,6 +131,7 @@ export function PurchaseDetailPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        </div>
       </div>
 
       {/* Summary card */}

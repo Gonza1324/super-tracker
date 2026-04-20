@@ -6,10 +6,12 @@ import { GroupsPage } from '@/app/groups/page'
 import { DashboardPage } from '@/app/dashboard/page'
 import { PurchasesPage } from '@/app/purchases/page'
 import { NewPurchasePage } from '@/app/purchases/new'
+import { EditPurchasePage } from '@/app/purchases/edit'
 import { PurchaseDetailPage } from '@/app/purchases/detail'
 import { StockPage } from '@/app/stock/page'
 import { ReportsPage } from '@/app/reports/page'
 import { SettingsPage } from '@/app/settings/page'
+import { AdminProductsPage } from '@/app/admin/products'
 
 export const router = createBrowserRouter([
   {
@@ -34,9 +36,11 @@ export const router = createBrowserRouter([
           { path: '/purchases', element: <PurchasesPage /> },
           { path: '/purchases/new', element: <NewPurchasePage /> },
           { path: '/purchases/:id', element: <PurchaseDetailPage /> },
+          { path: '/purchases/:id/edit', element: <EditPurchasePage /> },
           { path: '/stock', element: <StockPage /> },
           { path: '/reports', element: <ReportsPage /> },
           { path: '/settings', element: <SettingsPage /> },
+          { path: '/admin/products', element: <AdminProductsPage /> },
         ],
       },
     ],

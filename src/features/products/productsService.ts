@@ -29,7 +29,8 @@ export async function createProduct(
   name: string,
   brand: string | null,
   categoryId: string | null,
-  defaultUnit: string
+  defaultUnit: string,
+  barcode: string | null = null
 ): Promise<Product> {
   const { data: { user } } = await supabase.auth.getUser()
   const { data, error } = await supabase
@@ -40,6 +41,7 @@ export async function createProduct(
       brand: brand || null,
       category_id: categoryId || null,
       default_unit: defaultUnit,
+      barcode: barcode || null,
       created_by: user?.id ?? null,
     })
     .select()

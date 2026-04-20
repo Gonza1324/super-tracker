@@ -39,3 +39,22 @@ export async function joinGroup(groupId: string): Promise<Tables<'groups'>> {
   }
   return data as Tables<'groups'>
 }
+
+export async function leaveGroup(groupId: string): Promise<void> {
+  const { error } = await supabase.rpc('leave_group', { p_group_id: groupId })
+  if (error) {
+    if (error.message?.includes('last_owner')) {
+      throw new Error('Sos el único dueño. Eliminá el grupo o transferí la propiedad antes de salir.')
+    }
+    if (error.message?.includes('not_member')) throw new Error('No sos miembro de ese grupo.')
+    throw error
+  }
+}
+
+export async function deleteGroup(groupId: string): Promise<void> {
+  const { error } = await supabase.rpc('delete_group', { p_group_id: groupId })
+  if (error) {
+    if (error.message?.includes('not_owner')) throw new Error('Solo el dueño puede eliminar el grupo.')
+    throw error
+  }
+}

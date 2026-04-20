@@ -110,7 +110,60 @@ export async function fetchPurchaseItems(purchaseId: string): Promise<PurchaseIt
   return (data ?? []) as PurchaseItemWithProduct[]
 }
 
+export async function updatePurchase(
+  id: string,
+  storeId: string | null,
+  purchaseDate: string,
+  notes: string | null,
+  items: NewPurchaseItem[]
+): Promise<Purchase> {
+  const { data: purchase, error: purchaseError } = await supabase
+    .from('purchases')
+    .update({
+      store_id: storeId,
+      purchase_date: purchaseDate,
+      notes: notes || null,
+    })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (purchaseError) throw purchaseError
+
+  const { error: deleteError } = await supabase
+    .from('purchase_items')
+    .delete()
+    .eq('purchase_id', id)
+
+  if (deleteError) throw deleteError
+
+  const itemsToInsert: TablesInsert<'purchase_items'>[] = items.map(item => ({
+    purchase_id: id,
+    product_id: item.product_id,
+    quantity: item.quantity,
+    unit: item.unit,
+    unit_price: item.unit_price,
+    total: item.total,
+  }))
+
+  const { error: itemsError } = await supabase
+    .from('purchase_items')
+    .insert(itemsToInsert)
+
+  if (itemsError) throw itemsError
+
+  return purchase
+}
+
 export async function deletePurchase(id: string): Promise<void> {
+  // Borramos items primero para que el trigger de reversión de stock encuentre
+  // todavía visible el purchase padre (si no, group_id queda null).
+  const { error: itemsError } = await supabase
+    .from('purchase_items')
+    .delete()
+    .eq('purchase_id', id)
+  if (itemsError) throw itemsError
+
   const { error } = await supabase.from('purchases').delete().eq('id', id)
   if (error) throw error
 }

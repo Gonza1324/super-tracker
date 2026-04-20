@@ -1,16 +1,16 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { pdf } from '@react-pdf/renderer'
-import { saveAs } from 'file-saver'
 import { toast } from 'sonner'
-import { Package, Minus, Plus, FileDown, Search } from 'lucide-react'
+import { Package, Minus, Plus, ListChecks, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Fab } from '@/components/ui/fab'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ManualAdjustDialog } from '@/components/forms/ManualAdjustDialog'
-import { StockPDFDocument } from '@/features/stock/StockPDF'
+import { NewProductDialog } from '@/components/forms/NewProductDialog'
+import { ShoppingListDialog } from '@/features/stock/ShoppingListDialog'
 import {
   fetchStockItems,
   adjustStock,
@@ -110,7 +110,8 @@ export function StockPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [stockFilter, setStockFilter] = useState<StockFilter>('all')
   const [adjustItem, setAdjustItem] = useState<StockItemWithProduct | null>(null)
-  const [exporting, setExporting] = useState(false)
+  const [listOpen, setListOpen] = useState(false)
+  const [newProductOpen, setNewProductOpen] = useState(false)
 
   const { data: stockItems = [], isLoading } = useQuery({
     queryKey: ['stock', currentGroupId],
@@ -156,26 +157,18 @@ export function StockPage() {
     return result
   }, [stockItems, search, categoryFilter, stockFilter])
 
-  const missingCount = stockItems.filter(i => isOut(i) || isLow(i)).length
+  const missing = useMemo(
+    () => stockItems.filter(i => isOut(i) || isLow(i)),
+    [stockItems],
+  )
+  const missingCount = missing.length
 
-  async function handleExportPDF() {
-    const missing = stockItems.filter(i => isOut(i) || isLow(i))
-    if (missing.length === 0) {
+  function handleOpenList() {
+    if (missingCount === 0) {
       toast.info('No hay productos por reponer')
       return
     }
-    setExporting(true)
-    try {
-      const blob = await pdf(
-        <StockPDFDocument items={missing} groupName={currentGroupName ?? 'Mi grupo'} />
-      ).toBlob()
-      saveAs(blob, `lista-compras-${new Date().toISOString().slice(0, 10)}.pdf`)
-      toast.success('PDF descargado')
-    } catch {
-      toast.error('Error al generar el PDF')
-    } finally {
-      setExporting(false)
-    }
+    setListOpen(true)
   }
 
   if (!currentGroupId) return null
@@ -197,11 +190,10 @@ export function StockPage() {
           variant="outline"
           size="sm"
           className="gap-2"
-          onClick={handleExportPDF}
-          disabled={exporting}
+          onClick={handleOpenList}
         >
-          <FileDown size={15} />
-          {exporting ? 'Generando...' : 'Exportar lista'}
+          <ListChecks size={15} />
+          Ver lista
         </Button>
       </div>
 
@@ -291,6 +283,25 @@ export function StockPage() {
           isPending={adjustMutation.isPending}
         />
       )}
+
+      <Fab
+        onClick={() => setNewProductOpen(true)}
+        icon={<Plus size={18} />}
+        label="Nuevo producto"
+      />
+
+      <NewProductDialog
+        groupId={currentGroupId}
+        open={newProductOpen}
+        onOpenChange={setNewProductOpen}
+      />
+
+      <ShoppingListDialog
+        open={listOpen}
+        onOpenChange={setListOpen}
+        items={missing}
+        groupName={currentGroupName ?? 'Mi grupo'}
+      />
     </div>
   )
 }

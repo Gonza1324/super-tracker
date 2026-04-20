@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Plus, Store, SlidersHorizontal, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Fab } from '@/components/ui/fab'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -109,24 +110,19 @@ export function PurchasesPage() {
             </p>
           )}
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowFilters(f => !f)}
-            className="relative"
-          >
-            <SlidersHorizontal size={18} />
-            {activeFilterCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground font-medium">
-                {activeFilterCount}
-              </span>
-            )}
-          </Button>
-          <Button size="icon" onClick={() => navigate('/purchases/new')}>
-            <Plus size={18} />
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setShowFilters(f => !f)}
+          className="relative"
+        >
+          <SlidersHorizontal size={18} />
+          {activeFilterCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground font-medium">
+              {activeFilterCount}
+            </span>
+          )}
+        </Button>
       </div>
 
       {/* Filtros */}
@@ -258,6 +254,12 @@ export function PurchasesPage() {
           ))}
         </div>
       )}
+
+      <Fab
+        onClick={() => navigate('/purchases/new')}
+        icon={<Plus size={18} />}
+        label="Nueva compra"
+      />
     </div>
   )
 }
