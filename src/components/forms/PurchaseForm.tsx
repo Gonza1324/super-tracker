@@ -95,7 +95,7 @@ function ItemRow({
                 <Label className="text-xs text-muted-foreground mb-1 block">Producto</Label>
                 <ProductCombobox
                   groupId={groupId}
-                  value={productField.value || null}
+                  value={field.value || null}
                   onChange={(p) => {
                     field.onChange(p?.id ?? '')
                     productField.onChange(p)

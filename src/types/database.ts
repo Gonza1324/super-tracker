@@ -93,6 +93,36 @@ export type Database = {
         Args: { p_group_id: string }
         Returns: boolean
       }
+      create_group: {
+        Args: { group_name: string }
+        Returns: Database['public']['Tables']['groups']['Row']
+      }
+      join_group: {
+        Args: { p_group_id: string }
+        Returns: Database['public']['Tables']['groups']['Row']
+      }
+      leave_group: {
+        Args: { p_group_id: string }
+        Returns: void
+      }
+      delete_group: {
+        Args: { p_group_id: string }
+        Returns: void
+      }
+      create_global_product: {
+        Args: {
+          p_name: string
+          p_brand: string | null
+          p_category_id: string | null
+          p_default_unit: string
+          p_barcode: string | null
+        }
+        Returns: Database['public']['Tables']['products']['Row']
+      }
+      delete_global_product: {
+        Args: { p_product_id: string }
+        Returns: void
+      }
     }
     Enums: { [_ in never]: never }
     CompositeTypes: { [_ in never]: never }
