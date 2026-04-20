@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import { BarcodeFormat, DecodeHintType } from '@zxing/library'
 import { Loader2, X } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 
 interface Props {
   open: boolean
@@ -38,7 +38,6 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
     const reader = new BrowserMultiFormatReader(hints)
     const video = videoRef.current
     let active = true
-    let stream: MediaStream | null = null
     let controls: { stop: () => void } | null = null
 
     setError(null)
@@ -47,42 +46,38 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
     async function start() {
       if (!video) return
       try {
-        // Tomamos el stream manualmente con facingMode 'environment' (cámara trasera)
-        // y forzamos play() — Safari iOS no auto-reproduce el video al asignar srcObject.
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' } },
-          audio: false,
-        })
+        const ctrl = await reader.decodeFromConstraints(
+          {
+            video: { facingMode: { ideal: 'environment' } },
+            audio: false,
+          },
+          video,
+          (result, _err, c) => {
+            if (!active) {
+              c.stop()
+              return
+            }
+            if (result) {
+              onDetectedRef.current(result.getText())
+              c.stop()
+              onOpenChangeRef.current(false)
+            }
+          },
+        )
         if (!active) {
-          stream.getTracks().forEach(t => t.stop())
+          ctrl.stop()
           return
         }
-        video.srcObject = stream
-        video.setAttribute('playsinline', 'true')
-        video.muted = true
-        await video.play()
-
-        if (!active) return
+        controls = ctrl
         setStarting(false)
-
-        controls = await reader.decodeFromVideoElement(video, (result, _err, ctrl) => {
-          if (!active) {
-            ctrl.stop()
-            return
-          }
-          if (result) {
-            onDetectedRef.current(result.getText())
-            ctrl.stop()
-            onOpenChangeRef.current(false)
-          }
-        })
       } catch (err: unknown) {
         if (!active) return
+        const name = err instanceof Error ? err.name : ''
         const msg = err instanceof Error ? err.message : 'No se pudo acceder a la cámara'
-        if (err instanceof Error && (err.name === 'NotAllowedError' || msg.includes('Permission'))) {
+        if (name === 'NotAllowedError' || msg.includes('Permission')) {
           setError('Permiso de cámara denegado')
-        } else if (err instanceof Error && err.name === 'NotFoundError') {
-          setError('No se encontró cámara en el dispositivo')
+        } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+          setError('No se encontró una cámara compatible')
         } else {
           setError(msg)
         }
@@ -95,6 +90,7 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
     return () => {
       active = false
       controls?.stop()
+      const stream = video?.srcObject as MediaStream | null
       stream?.getTracks().forEach(t => t.stop())
       if (video) video.srcObject = null
     }
@@ -105,6 +101,9 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
       <DialogContent className="max-w-sm p-0 overflow-hidden">
         <DialogHeader className="px-4 pt-4 pb-2 flex-row items-center justify-between space-y-0">
           <DialogTitle className="text-base">Escanear código</DialogTitle>
+          <DialogDescription className="sr-only">
+            Apuntá la cámara al código de barras del producto
+          </DialogDescription>
           <button
             onClick={() => onOpenChange(false)}
             className="p-1 rounded-md hover:bg-accent transition-colors"
