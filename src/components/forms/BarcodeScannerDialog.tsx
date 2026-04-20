@@ -38,36 +38,63 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
     const reader = new BrowserMultiFormatReader(hints)
     const video = videoRef.current
     let active = true
+    let stream: MediaStream | null = null
     let controls: { stop: () => void } | null = null
 
     setError(null)
     setStarting(true)
 
-    reader
-      .decodeFromVideoDevice(undefined, video!, (result, _err, ctrl) => {
+    async function start() {
+      if (!video) return
+      try {
+        // Tomamos el stream manualmente con facingMode 'environment' (cámara trasera)
+        // y forzamos play() — Safari iOS no auto-reproduce el video al asignar srcObject.
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false,
+        })
         if (!active) {
-          ctrl.stop()
+          stream.getTracks().forEach(t => t.stop())
           return
         }
-        controls = ctrl
+        video.srcObject = stream
+        video.setAttribute('playsinline', 'true')
+        video.muted = true
+        await video.play()
+
+        if (!active) return
         setStarting(false)
-        if (result) {
-          onDetectedRef.current(result.getText())
-          ctrl.stop()
-          onOpenChangeRef.current(false)
-        }
-      })
-      .catch((err: unknown) => {
+
+        controls = await reader.decodeFromVideoElement(video, (result, _err, ctrl) => {
+          if (!active) {
+            ctrl.stop()
+            return
+          }
+          if (result) {
+            onDetectedRef.current(result.getText())
+            ctrl.stop()
+            onOpenChangeRef.current(false)
+          }
+        })
+      } catch (err: unknown) {
         if (!active) return
         const msg = err instanceof Error ? err.message : 'No se pudo acceder a la cámara'
-        setError(msg.includes('Permission') ? 'Permiso de cámara denegado' : msg)
+        if (err instanceof Error && (err.name === 'NotAllowedError' || msg.includes('Permission'))) {
+          setError('Permiso de cámara denegado')
+        } else if (err instanceof Error && err.name === 'NotFoundError') {
+          setError('No se encontró cámara en el dispositivo')
+        } else {
+          setError(msg)
+        }
         setStarting(false)
-      })
+      }
+    }
+
+    start()
 
     return () => {
       active = false
       controls?.stop()
-      const stream = video?.srcObject as MediaStream | null
       stream?.getTracks().forEach(t => t.stop())
       if (video) video.srcObject = null
     }
