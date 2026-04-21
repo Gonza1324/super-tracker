@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { formatQuantity } from '@/lib/format'
 import { StockPDFDocument } from '@/features/stock/StockPDF'
+import { groupByCategory, type StockGroup } from '@/features/stock/groupByCategory'
 import type { StockItemWithProduct } from '@/features/stock/stockService'
 
 interface Props {
@@ -18,45 +19,12 @@ interface Props {
   groupName: string
 }
 
-const NO_CATEGORY_ID = '__none__'
-const NO_CATEGORY_LABEL = 'Sin categoría'
-const NO_CATEGORY_ICON = '📦'
-
-interface Group {
-  id: string
-  name: string
-  icon: string
-  items: StockItemWithProduct[]
-}
-
-function groupByCategory(items: StockItemWithProduct[]): Group[] {
-  const map = new Map<string, Group>()
-  for (const item of items) {
-    const cat = item.products?.categories
-    const id = cat?.id ?? NO_CATEGORY_ID
-    if (!map.has(id)) {
-      map.set(id, {
-        id,
-        name: cat?.name ?? NO_CATEGORY_LABEL,
-        icon: cat?.icon ?? NO_CATEGORY_ICON,
-        items: [],
-      })
-    }
-    map.get(id)!.items.push(item)
-  }
-  return Array.from(map.values()).sort((a, b) => {
-    if (a.id === NO_CATEGORY_ID) return 1
-    if (b.id === NO_CATEGORY_ID) return -1
-    return a.name.localeCompare(b.name)
-  })
-}
-
 function itemQuantityLabel(item: StockItemWithProduct): string {
   if (item.quantity === 0) return 'sin stock'
   return `${formatQuantity(item.quantity)} ${item.unit}`
 }
 
-function buildShareText(groups: Group[], groupName: string): string {
+function buildShareText(groups: StockGroup[], groupName: string): string {
   const date = format(new Date(), "d 'de' MMMM yyyy", { locale: es })
   const lines = [`Lista de compras — ${groupName}`, date, '']
   for (const g of groups) {

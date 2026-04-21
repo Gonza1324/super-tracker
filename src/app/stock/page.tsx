@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ManualAdjustDialog } from '@/components/forms/ManualAdjustDialog'
 import { AddStockDialog } from '@/components/forms/AddStockDialog'
 import { ShoppingListDialog } from '@/features/stock/ShoppingListDialog'
+import { groupByCategory } from '@/features/stock/groupByCategory'
 import {
   fetchStockItems,
   adjustStock,
@@ -259,6 +260,8 @@ export function StockPage() {
     return result
   }, [stockItems, search, categoryFilter, stockFilter])
 
+  const grouped = useMemo(() => groupByCategory(filtered), [filtered])
+
   const missing = useMemo(
     () => stockItems.filter(i => isOut(i) || isLow(i)),
     [stockItems],
@@ -361,15 +364,26 @@ export function StockPage() {
       )}
 
       {!isLoading && filtered.length > 0 && (
-        <div className="space-y-2">
-          {filtered.map(item => (
-            <StockItemCard
-              key={item.id}
-              item={item}
-              onQuickAdjust={delta => handleQuickAdjust(item, delta)}
-              onManualAdjust={() => setAdjustItem(item)}
-              onDelete={() => handleDelete(item)}
-            />
+        <div className="space-y-5">
+          {grouped.map(group => (
+            <div key={group.id} className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide px-1">
+                <span className="text-base leading-none">{group.icon}</span>
+                <span>{group.name}</span>
+                <span className="text-[10px] text-muted-foreground/70">· {group.items.length}</span>
+              </div>
+              <div className="space-y-2">
+                {group.items.map(item => (
+                  <StockItemCard
+                    key={item.id}
+                    item={item}
+                    onQuickAdjust={delta => handleQuickAdjust(item, delta)}
+                    onManualAdjust={() => setAdjustItem(item)}
+                    onDelete={() => handleDelete(item)}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
