@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Loader2, ScanLine } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { BarcodeScannerDialog } from '@/components/forms/BarcodeScannerDialog'
 import { ProductCombobox } from '@/components/forms/ProductCombobox'
 import { addStockManual } from '@/features/stock/stockService'
-import type { Product } from '@/features/products/productsService'
+import { fetchProducts, type Product } from '@/features/products/productsService'
 import { UNIT_OPTIONS, UNIT_VALUES, type Unit } from '@/features/products/units'
 
 interface Props {
@@ -24,21 +25,33 @@ export function AddStockDialog({ groupId, open, onOpenChange }: Props) {
   const [quantity, setQuantity] = useState('1')
   const [unit, setUnit] = useState<Unit>('un')
   const [notes, setNotes] = useState('')
+  const [scannerOpen, setScannerOpen] = useState(false)
 
-  useEffect(() => {
-    if (!open) {
-      setProduct(null)
-      setQuantity('1')
-      setUnit('un')
-      setNotes('')
-    }
-  }, [open])
+  const { data: products = [] } = useQuery({
+    queryKey: ['products', groupId],
+    queryFn: () => fetchProducts(groupId),
+    enabled: open,
+  })
 
-  useEffect(() => {
-    if (product?.default_unit && UNIT_VALUES.includes(product.default_unit as Unit)) {
-      setUnit(product.default_unit as Unit)
+  function resetForm() {
+    setProduct(null)
+    setQuantity('1')
+    setUnit('un')
+    setNotes('')
+    setScannerOpen(false)
+  }
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen) resetForm()
+    onOpenChange(nextOpen)
+  }
+
+  function handleProductChange(nextProduct: Product | null) {
+    setProduct(nextProduct)
+    if (nextProduct?.default_unit && UNIT_VALUES.includes(nextProduct.default_unit as Unit)) {
+      setUnit(nextProduct.default_unit as Unit)
     }
-  }, [product])
+  }
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -46,7 +59,7 @@ export function AddStockDialog({ groupId, open, onOpenChange }: Props) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['stock', groupId] })
       toast.success(`${product?.name ?? 'Producto'} agregado al stock`)
-      onOpenChange(false)
+      handleOpenChange(false)
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -55,7 +68,7 @@ export function AddStockDialog({ groupId, open, onOpenChange }: Props) {
   const canSubmit = !!product && qty > 0 && !mutation.isPending
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>Agregar a stock</DialogTitle>
@@ -72,11 +85,23 @@ export function AddStockDialog({ groupId, open, onOpenChange }: Props) {
         >
           <div className="space-y-2">
             <Label>Producto</Label>
-            <ProductCombobox
-              groupId={groupId}
-              value={product?.id ?? null}
-              onChange={setProduct}
-            />
+            <div className="flex gap-2">
+              <ProductCombobox
+                groupId={groupId}
+                value={product?.id ?? null}
+                onChange={handleProductChange}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setScannerOpen(true)}
+                aria-label="Buscar producto con cámara"
+                className="shrink-0"
+              >
+                <ScanLine size={16} />
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -117,7 +142,7 @@ export function AddStockDialog({ groupId, open, onOpenChange }: Props) {
           </div>
 
           <div className="flex gap-2 pt-1">
-            <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" className="flex-1" onClick={() => handleOpenChange(false)}>
               Cancelar
             </Button>
             <Button type="submit" className="flex-1" disabled={!canSubmit}>
@@ -127,6 +152,22 @@ export function AddStockDialog({ groupId, open, onOpenChange }: Props) {
           </div>
         </form>
       </DialogContent>
+      <BarcodeScannerDialog
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onDetected={(code) => {
+          const normalizedCode = code.trim()
+          const match = products.find(p => p.barcode?.trim() === normalizedCode)
+
+          if (!match) {
+            toast.error(`No encontré un producto con código ${normalizedCode}`)
+            return
+          }
+
+          handleProductChange(match)
+          toast.success(`Producto detectado: ${match.name}`)
+        }}
+      />
     </Dialog>
   )
 }
